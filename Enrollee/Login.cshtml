@@ -1,0 +1,49 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enrollee Login - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .login-container { max-width: 400px; margin: 80px auto; }
+        .info-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="card">
+            <div style="text-align: center;">
+                <h1>🏥 Enrollee Portal</h1>
+                <p>Access your health records and claims</p>
+            </div>
+            
+            <div class="info-box">
+                <strong>Demo Credentials:</strong><br>
+                Username: JOHNDOE<br>
+                Password: enrollee123
+            </div>
+            
+            @if (ViewBag.Error != null)
+            {
+                <div class="error-msg" style="background:#ffebee; color:#c62828; padding:10px; border-radius:5px; margin-bottom:15px;">
+                    @ViewBag.Error
+                </div>
+            }
+            
+            <form method="post" action="/Enrollee/Login">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit" class="btn-success">Login</button>
+            </form>
+            
+            <div class="links">
+                <a href="/">← Back to Homepage</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

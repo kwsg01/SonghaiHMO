@@ -1,0 +1,48 @@
+@{
+    Layout = null;
+    var token = ViewBag.Token as string;
+    var userId = ViewBag.UserId as string;
+    var userType = ViewBag.UserType as string;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Password - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .login-container { max-width: 450px; margin: 80px auto; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <div class="card">
+        <div style="text-align: center;">
+            <h1>🔐 Reset Password</h1>
+            <p>Create a new password for your account</p>
+        </div>
+        
+        @if (ViewBag.Error != null)
+        {
+            <div class="info-box" style="background:#ffebee; border-left-color:#dc3545;">
+                <p style="color:#c62828;">@ViewBag.Error</p>
+            </div>
+        }
+        
+        <form method="post" action="/ForgotPassword/Reset">
+            <input type="hidden" name="token" value="@token">
+            <input type="hidden" name="userId" value="@userId">
+            <input type="hidden" name="userType" value="@userType">
+            <input type="password" name="password" placeholder="New Password" required>
+            <input type="password" name="confirmPassword" placeholder="Confirm New Password" required>
+            <button type="submit" class="btn-success">Reset Password</button>
+        </form>
+        
+        <div class="links">
+            <a href="/Home/Login?role=admin">← Back to Login</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

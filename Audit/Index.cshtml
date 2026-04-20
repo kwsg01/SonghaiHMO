@@ -1,0 +1,114 @@
+@model IEnumerable<SonghaiHMO.Models.ActivityLog>
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+    var days = ViewBag.Days ?? 7;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audit Logs - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .filter-bar { display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar button { width: auto; padding: 8px 15px; }
+        .status-pending { color: #ff9800; font-weight: bold; }
+        .status-approved { color: #28a745; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📋 Audit Trail</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Admin/Logout" class="btn-danger" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Audit/Index" style="background:#28a745;">📜 Audit Logs</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="card">
+        <div class="filter-bar">
+            <label>Show logs from last:</label>
+            <select id="daysSelect">
+                <option value="1">1 day</option>
+                <option value="7" selected>7 days</option>
+                <option value="14">14 days</option>
+                <option value="30">30 days</option>
+            </select>
+            <button onclick="refreshLogs()" class="btn-primary">Refresh</button>
+            <span id="logCount" style="margin-left: auto;">@Model.Count() activities recorded</span>
+        </div>
+        
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Entity</th><th>Details</th><th>IP Address</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTable">
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@log.UserName</td>
+                            <td>@log.UserRole</td>
+                            <td><span style="color:#1a73e8; font-weight:bold;">@log.Action</span></td>
+                            <td>@log.EntityType #@log.EntityId</td>
+                            <td>@(log.Details.Length > 50 ? log.Details.Substring(0,50)+"..." : log.Details)</td>
+                            <td>@log.IpAddress</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+
+<script>
+    async function refreshLogs() {
+        var days = document.getElementById('daysSelect').value;
+        var response = await fetch('/Audit/GetLogs?days=' + days);
+        var logs = await response.json();
+        var tbody = document.getElementById('logsTable');
+        document.getElementById('logCount').innerText = logs.length + ' activities recorded';
+        
+        tbody.innerHTML = '';
+        logs.forEach(function(log) {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${log.timestamp}</td>
+                    <td>${log.userName}</td>
+                    <td>${log.userRole}</td>
+                    <td><span style="color:#1a73e8; font-weight:bold;">${log.action}</span></td>
+                    <td>${log.entityType} #${log.entityId}</td>
+                    <td>${log.details.length > 50 ? log.details.substring(0,50)+'...' : log.details}</td>
+                    <td>${log.ipAddress}</td>
+                </tr>
+            `;
+        });
+    }
+    
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+</script>
+</body>
+</html>

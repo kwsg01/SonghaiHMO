@@ -1,0 +1,162 @@
+@model IEnumerable<SonghaiHMO.Models.Provider>
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Providers - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-bar input { width: 250px; margin: 0; }
+        @@media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .search-bar { flex-direction: column; align-items: stretch; } .search-bar input { width: 100%; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏥 Manage Healthcare Providers</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Home/Logout" class="btn-danger" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="card">
+        <h2>➕ Add New Provider</h2>
+        <form id="providerForm">
+            <div class="form-row">
+                <input type="text" id="provider_name" placeholder="Provider/Hospital Name" required>
+                <input type="email" id="email" placeholder="Email Address" required>
+            </div>
+            <div class="form-row">
+                <input type="tel" id="phone" placeholder="Phone Number">
+                <input type="password" id="password" placeholder="Password" value="provider123" required>
+            </div>
+            <textarea id="address" placeholder="Full Address" rows="2"></textarea>
+            <button type="submit" class="btn-success">✅ Add Provider</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2>📋 Registered Providers</h2>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="searchInput" placeholder="🔍 Search providers...">
+                <button onclick="location.reload()" style="width: auto; padding: 8px 15px;">🔄 Refresh</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <table id="providersTable">
+                <thead>
+                    <tr><th>ID</th><th>Provider Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Date</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var p in Model)
+                        {
+                            <tr>
+                                <td>@p.Id</td>
+                                <td><strong>@p.ProviderName</strong></td>
+                                <td>@p.Email</td>
+                                <td>@(p.Phone ?? "-")</td>
+                                <td>@(p.Address ?? "-")</td>
+                                <td>@p.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <button class="btn-warning" onclick="editProvider(@p.Id, '@p.ProviderName')" style="padding:5px 10px;margin-right:5px;">✏️ Edit</button>
+                                    <button class="btn-danger" onclick="deleteProvider(@p.Id)" style="padding:5px 10px;">🗑️ Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="empty-state">No providers registered yet</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+<div id="notification" class="notification"></div>
+
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        var searchTerm = this.value.toLowerCase();
+        var table = document.getElementById('providersTable');
+        var rows = table.getElementsByTagName('tr');
+        for (var i = 1; i < rows.length; i++) {
+            var row = rows[i];
+            var found = false;
+            var cells = row.getElementsByTagName('td');
+            for (var j = 0; j < cells.length - 1; j++) {
+                if (cells[j] && cells[j].innerText.toLowerCase().includes(searchTerm)) { found = true; break; }
+            }
+            row.style.display = found ? '' : 'none';
+        }
+    });
+
+    document.getElementById('providerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var data = {
+            providerName: document.getElementById('provider_name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            password: document.getElementById('password').value,
+            address: document.getElementById('address').value
+        };
+        var response = await fetch('/Admin/AddProvider', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+        });
+        var result = await response.json();
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: 'Success!', text: 'Provider added', timer: 1500, showConfirmButton: false });
+            setTimeout(function() { location.reload(); }, 1500);
+        }
+    });
+
+    async function editProvider(id, currentName) {
+        var result = await Swal.fire({ title: 'Edit Provider', input: 'text', inputValue: currentName, showCancelButton: true, confirmButtonText: 'Save' });
+        if (result.isConfirmed && result.value) {
+            await fetch('/Admin/UpdateProvider', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, providerName: result.value })
+            });
+            Swal.fire({ icon: 'success', title: 'Updated!', text: 'Provider updated', timer: 1500, showConfirmButton: false });
+            setTimeout(function() { location.reload(); }, 1500);
+        }
+    }
+
+    async function deleteProvider(id) {
+        var result = await Swal.fire({ title: 'Confirm Delete', text: 'Delete this provider? All claims will be deleted.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Yes, delete' });
+        if (result.isConfirmed) {
+            await fetch('/Admin/DeleteProvider?id=' + id, { method: 'POST' });
+            Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Provider deleted', timer: 1500, showConfirmButton: false });
+            setTimeout(function() { location.reload(); }, 1500);
+        }
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+</script>
+</body>
+</html>

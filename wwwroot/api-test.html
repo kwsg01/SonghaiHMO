@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test Client - Songhai HMO</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        button { background: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📱 Songhai HMO API Test Client</h1>
+    
+    <div class="card">
+        <h3>1. Login</h3>
+        <input type="text" id="username" placeholder="Username" value="admin">
+        <input type="password" id="password" placeholder="Password" value="admin123">
+        <button onclick="login()">Login</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="card">
+        <h3>2. Get Claims</h3>
+        <button onclick="getClaims()">Fetch Claims</button>
+        <div id="claimsResult"></div>
+    </div>
+
+    <div class="card">
+        <h3>3. Get Dashboard Stats</h3>
+        <button onclick="getStats()">Fetch Stats</button>
+        <div id="statsResult"></div>
+    </div>
+</div>
+
+<script>
+    let authToken = '';
+
+    async function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            authToken = result.data.token;
+            document.getElementById('loginResult').innerHTML = `<pre>✅ Login successful!\nToken: ${authToken.substring(0, 50)}...</pre>`;
+        } else {
+            document.getElementById('loginResult').innerHTML = `<pre>❌ Login failed: ${result.message}</pre>`;
+        }
+    }
+
+    async function getClaims() {
+        if (!authToken) { alert('Please login first'); return; }
+        
+        const response = await fetch('/api/claims', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const result = await response.json();
+        document.getElementById('claimsResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+    }
+
+    async function getStats() {
+        if (!authToken) { alert('Please login first'); return; }
+        
+        const response = await fetch('/api/dashboard/stats', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const result = await response.json();
+        document.getElementById('statsResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+    }
+</script>
+</body>
+</html>

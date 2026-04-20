@@ -1,0 +1,107 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Portal - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .portal-header {
+            text-align: center;
+            color: white;
+            padding: 40px 0 20px;
+        }
+        .portal-header h1 {
+            color: white;
+            font-size: 2.5rem;
+        }
+        .back-home {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .back-home a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .portal-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: block;
+        }
+        .portal-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        .portal-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .portal-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+        .portal-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="portal-header">
+            <h1>🏥 Songhai Health Trust</h1>
+            <p>Select your portal to continue</p>
+        </div>
+        
+        <div class="portal-grid">
+            <a href="/Home/Login?role=admin" class="portal-card">
+                <div class="portal-icon">👨‍💼</div>
+                <h3>Admin Portal</h3>
+                <p>Manage enrollees, claims, generate reports, and oversee operations</p>
+            </a>
+            
+            <a href="/Home/Login?role=provider" class="portal-card">
+                <div class="portal-icon">🏥</div>
+                <h3>Provider Portal</h3>
+                <p>Submit claims, track authorizations, and manage patient care</p>
+            </a>
+            
+            <a href="/Home/Login?role=callcentre" class="portal-card">
+                <div class="portal-icon">📞</div>
+                <h3>Call Centre Portal</h3>
+                <p>Real-time claim authorization and customer support</p>
+            </a>
+            
+            <a href="/Enrollee/Login" class="portal-card">
+                <div class="portal-icon">👤</div>
+                <h3>Enrollee Portal</h3>
+                <p>View your claims, coverage, and health records</p>
+            </a>
+        </div>
+        
+        <div class="back-home">
+            <a href="/">← Back to Homepage</a>
+        </div>
+    </div>
+</body>
+</html>

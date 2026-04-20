@@ -1,0 +1,228 @@
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard - Songhai HMO</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏥 Songhai Health Trust - Admin Dashboard</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Profile/Index" class="btn-profile">👤 My Profile</a>
+            <a href="/Admin/Logout" class="btn-danger">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Analytics/Index">📈 Analytics</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Audit/Index">📜 Audit Logs</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><h4>Total Enrollees</h4><div class="number">@ViewBag.TotalEnrollees</div></div>
+        <div class="stat-card"><h4>Total Claims</h4><div class="number">@ViewBag.TotalClaims</div></div>
+        <div class="stat-card"><h4>Pending Claims</h4><div class="number pending">@ViewBag.PendingClaims</div></div>
+        <div class="stat-card"><h4>Approved</h4><div class="number approved">@ViewBag.ApprovedClaims</div></div>
+        <div class="stat-card"><h4>Rejected</h4><div class="number rejected">@ViewBag.RejectedClaims</div></div>
+        <div class="stat-card"><h4>Total Payout</h4><div class="currency">₦@ViewBag.TotalPayout.ToString("N0")</div></div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Claims by Status</h3>
+            <canvas id="statusChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Monthly Claims Trend</h3>
+            <canvas id="trendChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Top Providers</h3>
+            <canvas id="providersChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Recent Claims</h3>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Enrollee</th>
+                        <th>Provider</th>
+                        <th>Service</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.RecentClaims != null && ((IEnumerable<SonghaiHMO.Models.Claim>)ViewBag.RecentClaims).Any())
+                    {
+                        foreach (var claim in ViewBag.RecentClaims)
+                        {
+                            <tr>
+                                <td>@claim.Id</td
+                                <td>@claim.Enrollee?.FullName</td
+                                <td>@claim.ProviderName</td
+                                <td>@(claim.ServiceDescription?.Length > 40 ? claim.ServiceDescription.Substring(0,40)+"..." : claim.ServiceDescription)</td
+                                <td>₦@claim.Amount.ToString("N0")</td
+                                <td class="status-@claim.Status.ToLower()">@claim.Status</td
+                                <td>@claim.SubmittedAt.ToString("yyyy-MM-dd")</td
+                                <td>
+                                    @if (claim.Status == "Pending")
+                                    {
+                                        <button class="btn-success" onclick="updateClaim(@claim.Id, 'Approved')">Approve</button>
+                                        <button class="btn-danger" onclick="updateClaim(@claim.Id, 'Rejected')">Reject</button>
+                                    }
+                                    else
+                                    {
+                                        <span>✓ Processed</span>
+                                    }
+                                 </td
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="empty-state">No claims yet</td
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+<div id="notification" class="notification"></div>
+
+<style>
+    .btn-profile {
+        background: #6c757d;
+        padding: 8px 15px;
+        text-decoration: none;
+        border-radius: 8px;
+        color: white;
+        margin-right: 10px;
+        display: inline-block;
+    }
+    .btn-profile:hover {
+        background: #5a6268;
+    }
+    .pending { color: #ff9800; }
+    .approved { color: #28a745; }
+    .rejected { color: #dc3545; }
+    .status-pending { color: #ff9800; font-weight: bold; }
+    .status-approved { color: #28a745; font-weight: bold; }
+    .status-rejected { color: #dc3545; font-weight: bold; }
+</style>
+
+<script>
+    // Status Chart
+    var statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Pending', 'Approved', 'Rejected'],
+            datasets: [{
+                data: [@ViewBag.PendingClaims, @ViewBag.ApprovedClaims, @ViewBag.RejectedClaims],
+                backgroundColor: ['#ff9800', '#28a745', '#dc3545']
+            }]
+        }
+    });
+
+    // Trend Chart
+    var trendCtx = document.getElementById('trendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Claims',
+                data: [5, 8, 12, 15, 18, 22],
+                borderColor: '#1a73e8',
+                backgroundColor: 'rgba(26,115,232,0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        }
+    });
+
+    // Providers Chart
+    var providersCtx = document.getElementById('providersChart').getContext('2d');
+    new Chart(providersCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Test Hospital', 'City Medical', 'LUTH', 'Reddington', 'St. Nicholas'],
+            datasets: [{
+                label: 'Claims',
+                data: [12, 8, 6, 4, 3],
+                backgroundColor: '#17a2b8',
+                borderRadius: 8
+            }]
+        }
+    });
+
+    async function updateClaim(id, status) {
+        var result = await Swal.fire({
+            title: 'Confirm ' + status,
+            text: 'Enter notes for provider (optional):',
+            icon: 'question',
+            input: 'textarea',
+            inputPlaceholder: 'Add notes here...',
+            showCancelButton: true,
+            confirmButtonColor: status === 'Approved' ? '#28a745' : '#dc3545',
+            confirmButtonText: 'Yes, ' + status.toLowerCase()
+        });
+        
+        if (result.isConfirmed) {
+            var notes = result.value || '';
+            var response = await fetch('/Admin/UpdateClaimStatus?id=' + id + '&status=' + status + '&notes=' + notes, {
+                method: 'POST'
+            });
+            var data = await response.json();
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: status + '!',
+                    text: 'Claim ' + status.toLowerCase(),
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            }
+        }
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    
+    if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark-mode');
+    }
+</script>
+</body>
+</html>

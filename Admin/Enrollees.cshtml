@@ -1,0 +1,173 @@
+@model IEnumerable<SonghaiHMO.Models.Enrollee>
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Enrollees - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-bar input { width: 250px; margin: 0; }
+        .import-section { background: #e8f5e9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        @@media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .search-bar { flex-direction: column; align-items: stretch; } .search-bar input { width: 100%; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📝 Manage Enrollees</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Home/Logout" class="btn-danger" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="import-section">
+        <span>📥 <strong>Bulk Import</strong></span>
+        <form id="importForm" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0;">
+            <input type="file" id="importFile" accept=".csv" style="width: auto; margin: 0;">
+            <button type="submit" class="btn-primary" style="width: auto; padding: 8px 15px;">Upload CSV</button>
+            <a href="/Import/DownloadTemplate" class="btn-warning" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Download Template</a>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>➕ Register New Enrollee</h2>
+        <form id="enrolmentForm">
+            <div class="form-row">
+                <input type="text" id="first_name" placeholder="First Name" required>
+                <input type="text" id="last_name" placeholder="Last Name" required>
+            </div>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="tel" id="phone" placeholder="Phone Number">
+            <select id="plan_type">
+                <option value="Basic">Basic Plan</option>
+                <option value="Standard">Standard Plan</option>
+                <option value="Premium">Premium Plan</option>
+            </select>
+            <button type="submit" class="btn-success">✅ Register Enrollee</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2>📋 Registered Enrollees</h2>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="searchInput" placeholder="🔍 Search enrollees...">
+                <button onclick="location.reload()" style="width: auto; padding: 8px 15px;">🔄 Refresh</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <table id="enrolleesTable">
+                <thead><tr><th>ID</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Plan</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var e in Model)
+                        {
+                            <tr>
+                                <td>@e.Id</td>
+                                <td>@e.FullName</td>
+                                <td>@e.Email</td>
+                                <td>@(e.Phone ?? "-")</td>
+                                <td>@e.PlanType</td>
+                                <td>@e.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                <td><button class="btn-danger" onclick="deleteEnrollee(@e.Id)" style="padding:5px 10px;">Delete</button></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="empty-state">No enrollees yet</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="notification" class="notification"></div>
+
+<script>
+    document.getElementById('importForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var fileInput = document.getElementById('importFile');
+        if (!fileInput.files.length) { Swal.fire({ icon: 'warning', title: 'No file', text: 'Please select a CSV file' }); return; }
+        
+        var formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        var response = await fetch('/Import/ImportEnrollees', { method: 'POST', body: formData });
+        var result = await response.json();
+        Swal.fire({ icon: result.success ? 'success' : 'error', title: result.success ? 'Import Complete' : 'Import Failed', text: `${result.imported} enrollees imported, ${result.errors} errors` });
+        if (result.success) setTimeout(() => location.reload(), 2000);
+    });
+
+    function showNotification(message, isError) {
+        var notification = document.getElementById('notification');
+        notification.style.backgroundColor = isError ? '#dc3545' : '#28a745';
+        notification.innerHTML = message;
+        notification.style.display = 'block';
+        setTimeout(function() { notification.style.display = 'none'; }, 3000);
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        var searchTerm = this.value.toLowerCase();
+        var table = document.getElementById('enrolleesTable');
+        var rows = table.getElementsByTagName('tr');
+        for (var i = 1; i < rows.length; i++) {
+            var row = rows[i];
+            var found = false;
+            var cells = row.getElementsByTagName('td');
+            for (var j = 0; j < cells.length - 1; j++) {
+                if (cells[j] && cells[j].innerText.toLowerCase().includes(searchTerm)) { found = true; break; }
+            }
+            row.style.display = found ? '' : 'none';
+        }
+    });
+
+    document.getElementById('enrolmentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var data = {
+            firstName: document.getElementById('first_name').value,
+            lastName: document.getElementById('last_name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            planType: document.getElementById('plan_type').value
+        };
+        var response = await fetch('/Admin/AddEnrollee', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+        });
+        var result = await response.json();
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: 'Success!', text: 'Enrollee registered', timer: 1500, showConfirmButton: false });
+            setTimeout(function() { location.reload(); }, 1500);
+        }
+    });
+    
+    async function deleteEnrollee(id) {
+        var result = await Swal.fire({ title: 'Confirm Delete', text: 'Delete this enrollee?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Yes, delete' });
+        if (result.isConfirmed) {
+            await fetch('/Admin/DeleteEnrollee?id=' + id, { method: 'POST' });
+            Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Enrollee deleted', timer: 1500, showConfirmButton: false });
+            setTimeout(function() { location.reload(); }, 1500);
+        }
+    }
+</script>
+</body>
+</html>

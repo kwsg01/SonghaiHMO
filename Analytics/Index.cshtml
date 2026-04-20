@@ -1,0 +1,166 @@
+@model SonghaiHMO.Models.AnalyticsDashboard
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics Dashboard - Songhai HMO</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .kpi-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .kpi-card .value { font-size: 28px; font-weight: bold; color: #1a73e8; }
+        .kpi-card .label { font-size: 12px; color: #666; text-transform: uppercase; margin-top: 5px; }
+        .kpi-card .trend-up { color: #28a745; }
+        .kpi-card .trend-down { color: #dc3545; }
+        .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .chart-box { background: white; padding: 20px; border-radius: 12px; }
+        .providers-table { width: 100%; border-collapse: collapse; }
+        .providers-table th, .providers-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        .progress-bar { background: #e0e0e0; border-radius: 10px; overflow: hidden; height: 8px; }
+        .progress-fill { background: #28a745; height: 8px; border-radius: 10px; }
+        @@media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 Advanced Analytics Dashboard</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Admin/Logout" class="btn-danger">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Analytics/Index" style="background:#28a745;">📈 Analytics</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="value">@Model.KPIs.TotalEnrollees</div><div class="label">Total Enrollees</div></div>
+        <div class="kpi-card"><div class="value">@Model.KPIs.TotalClaims</div><div class="label">Total Claims</div></div>
+        <div class="kpi-card"><div class="value" style="color:#ff9800">@Model.KPIs.PendingClaims</div><div class="label">Pending</div></div>
+        <div class="kpi-card"><div class="value" style="color:#28a745">@Model.KPIs.ApprovedClaims</div><div class="label">Approved</div></div>
+        <div class="kpi-card"><div class="value" style="color:#dc3545">@Model.KPIs.RejectedClaims</div><div class="label">Rejected</div></div>
+        <div class="kpi-card"><div class="value">₦@(Model.KPIs.TotalPayout.ToString("N0"))</div><div class="label">Total Payout</div></div>
+        <div class="kpi-card"><div class="value">@Model.KPIs.ApprovalRate.ToString("F1")%</div><div class="label">Approval Rate</div></div>
+        <div class="kpi-card"><div class="value">@Model.KPIs.AverageProcessingDays.ToString("F1") days</div><div class="label">Avg Processing</div></div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="chart-box"><h3>Monthly Claims Trend</h3><canvas id="monthlyChart"></canvas></div>
+        <div class="chart-box"><h3>Status Distribution</h3><canvas id="statusChart"></canvas></div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-box"><h3>Daily Claims (Last 30 Days)</h3><canvas id="dailyChart"></canvas></div>
+        <div class="chart-box"><h3>This Month: ₦@(Model.KPIs.ThisMonthPayout.ToString("N0"))</h3><canvas id="thisMonthChart"></canvas></div>
+    </div>
+
+    <!-- Top Providers -->
+    <div class="card">
+        <h3>🏥 Top Performing Providers</h3>
+        <table class="providers-table">
+            <thead><tr><th>Provider</th><th>Claims</th><th>Approved</th><th>Rejected</th><th>Total Amount</th><th>Approval Rate</th><th>Progress</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.TopProviders)
+                {
+                    <tr>
+                        <td>@p.ProviderName</td
+                        <td>@p.TotalClaims</td
+                        <td><span style="color:#28a745">@p.ApprovedClaims</span></td
+                        <td><span style="color:#dc3545">@p.RejectedClaims</span></td
+                        <td>₦@p.TotalAmount.ToString("N0")</td
+                        <td>@p.ApprovalRate.ToString("F1")%</td
+                        <td><div class="progress-bar"><div class="progress-fill" style="width: @p.ApprovalRate%"></div></div></td
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Enrollees -->
+    <div class="card">
+        <h3>👤 Recent Enrollees Activity</h3>
+        <table class="providers-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Claims</th><th>Total Amount</th><th>Joined</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.RecentEnrollees)
+                {
+                    <tr>
+                        <td>@e.Name</td
+                        <td>@e.Email</td
+                        <td>@e.PlanType</td
+                        <td>@e.ClaimCount</td
+                        <td>₦@e.TotalAmount.ToString("N0")</td
+                        <td>@e.JoinedAt.ToString("yyyy-MM-dd")</td
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+
+<script>
+    // Monthly Chart
+    var monthlyData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyClaims));
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {
+            labels: monthlyData.map(m => m.month),
+            datasets: [
+                { label: 'Claims', data: monthlyData.map(m => m.claims), backgroundColor: '#1a73e8', borderRadius: 8 },
+                { label: 'Amount (₦K)', data: monthlyData.map(m => m.amount / 1000), backgroundColor: '#ff9800', borderRadius: 8, type: 'line' }
+            ]
+        }
+    });
+
+    // Status Chart
+    var statusData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.StatusDistribution));
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: { labels: statusData.map(s => s.status), datasets: [{ data: statusData.map(s => s.count), backgroundColor: ['#ff9800', '#28a745', '#dc3545'] }] }
+    });
+
+    // Daily Chart
+    var dailyData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DailyTrends.Take(30)));
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'line',
+        data: {
+            labels: dailyData.map(d => new Date(d.date).toLocaleDateString()),
+            datasets: [{ label: 'Claims', data: dailyData.map(d => d.claims), borderColor: '#1a73e8', tension: 0.4, fill: true }]
+        }
+    });
+
+    // This Month Chart
+    new Chart(document.getElementById('thisMonthChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Approved', 'Rejected', 'Pending'],
+            datasets: [{ data: [@Model.KPIs.ApprovedClaims, @Model.KPIs.RejectedClaims, @Model.KPIs.PendingClaims], backgroundColor: ['#28a745', '#dc3545', '#ff9800'] }]
+        }
+    });
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+</script>
+</body>
+</html>

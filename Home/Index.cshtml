@@ -1,0 +1,242 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Songhai Health Trust - Quality Healthcare Coverage</title>
+    <!-- External CSS (should work) -->
+    <link rel="stylesheet" href="/css/style.css?v=3.0">
+    <!-- Inline CSS backup (in case external fails) -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .main-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0; position: fixed; width: 100%; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logo a { text-decoration: none; color: white; }
+        .logo h2 { font-size: 1.3rem; }
+        .logo p { font-size: 0.7rem; opacity: 0.9; }
+        .nav-menu { display: flex; gap: 1rem; list-style: none; flex-wrap: wrap; }
+        .nav-menu a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 25px; transition: background 0.3s; }
+        .nav-menu a:hover { background: rgba(255,255,255,0.2); }
+        .login-btn { background: rgba(255,255,255,0.2); border: 1px solid white; }
+        .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 120px 0 80px; margin-top: 60px; }
+        .hero-content { display: flex; align-items: center; gap: 3rem; flex-wrap: wrap; }
+        .hero-text { flex: 1; }
+        .hero-text h1 { font-size: 2.5rem; margin-bottom: 1rem; color: white; }
+        .hero-text p { font-size: 1.1rem; margin-bottom: 1.5rem; opacity: 0.9; }
+        .hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .btn-primary, .btn-secondary { padding: 0.8rem 1.5rem; border-radius: 50px; text-decoration: none; display: inline-block; transition: transform 0.2s; }
+        .btn-primary { background: #ff9800; color: white; }
+        .btn-primary:hover { background: #e68900; transform: translateY(-2px); }
+        .btn-secondary { background: transparent; color: white; border: 2px solid white; }
+        .btn-secondary:hover { background: white; color: #667eea; transform: translateY(-2px); }
+        .hero-stats { display: flex; gap: 2rem; margin-top: 2rem; text-align: center; flex-wrap: wrap; }
+        .stat-number { font-size: 1.8rem; font-weight: bold; }
+        .hero-image { flex: 1; text-align: center; }
+        .hero-image svg { max-width: 300px; width: 100%; }
+        .services { padding: 80px 0; background: white; }
+        .section-title { text-align: center; font-size: 2rem; margin-bottom: 0.5rem; color: #1a73e8; }
+        .section-subtitle { text-align: center; color: #666; margin-bottom: 3rem; }
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
+        .service-card { background: #f8f9fa; padding: 2rem; border-radius: 12px; text-align: center; transition: transform 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .service-card:hover { transform: translateY(-5px); }
+        .service-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .service-card h3 { color: #1a73e8; margin-bottom: 0.5rem; }
+        .about { padding: 80px 0; background: #f0f2f5; }
+        .about-content { display: flex; gap: 3rem; align-items: center; flex-wrap: wrap; }
+        .about-text { flex: 1; }
+        .about-text h2 { font-size: 2rem; margin-bottom: 1rem; color: #1a73e8; }
+        .about-features { list-style: none; margin-top: 1.5rem; }
+        .about-features li { margin-bottom: 0.8rem; padding-left: 1.5rem; position: relative; }
+        .about-features li:before { content: "✓"; color: #28a745; position: absolute; left: 0; font-weight: bold; }
+        .mission-box { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 12px; text-align: center; color: white; }
+        .why-choose { padding: 80px 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .why-choose .section-title { color: white; }
+        .why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-top: 3rem; }
+        .why-card { text-align: center; padding: 2rem; background: rgba(255,255,255,0.1); border-radius: 12px; }
+        .why-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .cta { padding: 80px 0; background: #1a73e8; color: white; text-align: center; }
+        .contact { padding: 80px 0; background: white; }
+        .contact-grid { display: flex; gap: 3rem; flex-wrap: wrap; }
+        .contact-info, .contact-form { flex: 1; }
+        .contact-item { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .contact-icon { font-size: 1.5rem; }
+        .contact-form input, .contact-form textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .contact-form button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .footer { background: #1a1a2e; color: white; padding: 40px 0 20px; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+        .footer-links { list-style: none; }
+        .footer-links a { color: #aaa; text-decoration: none; }
+        .copyright { text-align: center; padding-top: 2rem; border-top: 1px solid #333; color: #aaa; }
+        @@media (max-width: 768px) {
+            .hero-content, .about-content { flex-direction: column; }
+            .hero-text h1 { font-size: 1.8rem; }
+            .nav { flex-direction: column; text-align: center; }
+            .hero-stats { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <div class="nav">
+                <div class="logo">
+                    <a href="/">
+                        <h2>🏥 Songhai Health Trust</h2>
+                        <p>Your Health, Our Priority</p>
+                    </a>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="/Home/Portal" class="login-btn">Access Portal</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Quality Healthcare Coverage You Can Trust</h1>
+                    <p>Songhai Health Trust provides comprehensive HMO services ensuring you and your family receive the best medical care when you need it most.</p>
+                    <div class="hero-buttons">
+                        <a href="/Home/Portal" class="btn-primary">Access Portal →</a>
+                        <a href="#contact" class="btn-secondary">Contact Us</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat"><div class="stat-number">20+</div><div>Years Experience</div></div>
+                        <div class="stat"><div class="stat-number">500+</div><div>Partner Hospitals</div></div>
+                        <div class="stat"><div class="stat-number">100K+</div><div>Happy Members</div></div>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <svg viewBox="0 0 400 400">
+                        <circle cx="200" cy="200" r="180" fill="rgba(255,255,255,0.1)"></circle>
+                        <text x="200" y="200" text-anchor="middle" fill="white" font-size="24" font-weight="bold">Healthcare</text>
+                        <text x="200" y="230" text-anchor="middle" fill="white" font-size="18">For All</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="services">
+        <div class="container">
+            <h2 class="section-title">Our Services</h2>
+            <p class="section-subtitle">Comprehensive healthcare solutions tailored to your needs</p>
+            <div class="services-grid">
+                <div class="service-card"><div class="service-icon">🏥</div><h3>Inpatient Care</h3><p>Full coverage for hospital admissions, surgeries, and specialist consultations.</p></div>
+                <div class="service-card"><div class="service-icon">🚑</div><h3>Emergency Services</h3><p>24/7 emergency response and ambulance services across Nigeria.</p></div>
+                <div class="service-card"><div class="service-icon">💊</div><h3>Pharmacy Benefits</h3><p>Prescription drug coverage at all partner pharmacies nationwide.</p></div>
+                <div class="service-card"><div class="service-icon">👩‍⚕️</div><h3>Outpatient Care</h3><p>Regular check-ups, consultations, and preventive care services.</p></div>
+                <div class="service-card"><div class="service-icon">👶</div><h3>Maternity Care</h3><p>Comprehensive coverage for prenatal, delivery, and postnatal care.</p></div>
+                <div class="service-card"><div class="service-icon">🦷</div><h3>Dental & Optical</h3><p>Dental check-ups, eye exams, and corrective lenses coverage.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>About Songhai Health Trust</h2>
+                    <p>Since 2001, Songhai Health Trust has been a pioneer in Nigeria's healthcare insurance industry, committed to providing accessible, affordable, and quality healthcare coverage.</p>
+                    <ul class="about-features">
+                        <li>First-generation HMO licensed by NHIS</li>
+                        <li>Over 500 accredited healthcare providers nationwide</li>
+                        <li>24/7 customer support and call centre</li>
+                        <li>Digital-first approach with proprietary software platform</li>
+                        <li>Transparent claims processing and management</li>
+                    </ul>
+                </div>
+                <div class="mission-box">
+                    <h3>Our Mission</h3>
+                    <p>To deliver exceptional healthcare management services through innovation, integrity, and excellence.</p>
+                    <h3 style="margin-top: 1rem;">Our Vision</h3>
+                    <p>To be Nigeria's most trusted healthcare partner.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="why-choose">
+        <div class="container">
+            <h2 class="section-title">Why Choose Us</h2>
+            <p class="section-subtitle">What makes Songhai Health Trust different</p>
+            <div class="why-grid">
+                <div class="why-card"><div class="why-icon">⚡</div><h3>Fast Claims Processing</h3><p>Digital claims submission and approval within 48 hours</p></div>
+                <div class="why-card"><div class="why-icon">🔒</div><h3>Secure Platform</h3><p>Enterprise-grade security for all your health data</p></div>
+                <div class="why-card"><div class="why-icon">📱</div><h3>Mobile Access</h3><p>Access your health records and claims anywhere</p></div>
+                <div class="why-card"><div class="why-icon">🎧</div><h3>24/7 Support</h3><p>Dedicated call centre for all your inquiries</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Get Started?</h2>
+            <p>Access our secure portal to manage enrollees, process claims, and more.</p>
+            <a href="/Home/Portal" class="btn-primary" style="display: inline-block; margin-top: 1rem;">Access Portal Now →</a>
+        </div>
+    </section>
+
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Contact Us</h2>
+            <p class="section-subtitle">Get in touch with our team</p>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h3>Contact Information</h3>
+                    <div class="contact-item"><span class="contact-icon">📍</span><span>123, Health Avenue, Ikeja, Lagos, Nigeria</span></div>
+                    <div class="contact-item"><span class="contact-icon">📞</span><span>+234 1 234 5678</span></div>
+                    <div class="contact-item"><span class="contact-icon">✉️</span><span>info@songhaihealthtrust.com</span></div>
+                    <div class="contact-item"><span class="contact-icon">🕒</span><span>Monday - Friday: 8:00 AM - 6:00 PM</span></div>
+                </div>
+                <div class="contact-form">
+                    <h3>Send us a message</h3>
+                    <form id="contactForm">
+                        <input type="text" placeholder="Your Name" required>
+                        <input type="email" placeholder="Your Email" required>
+                        <textarea rows="4" placeholder="Your Message" required></textarea>
+                        <button type="submit">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div><h4>Songhai Health Trust</h4><p>Providing quality healthcare coverage since 2001.</p></div>
+                <div><h4>Quick Links</h4><ul class="footer-links"><li><a href="#home">Home</a></li><li><a href="#services">Services</a></li><li><a href="#about">About</a></li><li><a href="#contact">Contact</a></li></ul></div>
+                <div><h4>Portals</h4><ul class="footer-links"><li><a href="/Home/Portal">Admin Portal</a></li><li><a href="/Home/Portal">Provider Portal</a></li><li><a href="/Home/Portal">Call Centre</a></li></ul></div>
+            </div>
+            <div class="copyright"><p>&copy; 2026 Songhai Health Trust Limited. All rights reserved.</p></div>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your message! We will contact you soon.');
+            this.reset();
+        });
+    </script>
+</body>
+</html>

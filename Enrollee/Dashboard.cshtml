@@ -1,0 +1,96 @@
+@{
+    Layout = null;
+    var enrollee = ViewBag.Enrollee as SonghaiHMO.Models.Enrollee;
+    var claims = ViewBag.Claims as IEnumerable<SonghaiHMO.Models.Claim> ?? new List<SonghaiHMO.Models.Claim>();
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Dashboard - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: #1a73e8; }
+        .welcome-banner { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; }
+        .nav-links { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; background: white; padding: 15px 20px; border-radius: 12px; }
+        .nav-links a { padding: 10px 20px; text-decoration: none; border-radius: 8px; background: #f0f2f5; color: #333; }
+        .nav-links a:hover { background: #1a73e8; color: white; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 20px; border-radius: 12px; }
+        .status-pending { color: #ff9800; font-weight: bold; }
+        .status-approved { color: #28a745; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+        .copy-btn { background: #6c757d; color: white; border: none; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-left: 5px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏥 My Health Dashboard</h1>
+        <div class="user-info">
+            <span>👤 @enrollee?.FullName</span>
+            <a href="/Enrollee/Logout" class="btn-danger" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Enrollee/Dashboard" style="background:#28a745; color:white;">📊 Dashboard</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="welcome-banner">
+        <h2>Welcome, @enrollee?.FirstName!</h2>
+        <p>Plan: <strong>@enrollee?.PlanType</strong> | Member since: @enrollee?.CreatedAt.ToString("MMMM yyyy")</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><h4>Total Claims</h4><div class="number">@ViewBag.TotalClaims</div></div>
+        <div class="stat-card"><h4>Pending</h4><div class="number" style="color:#ff9800">@ViewBag.PendingClaims</div></div>
+        <div class="stat-card"><h4>Approved Amount</h4><div class="number" style="color:#28a745">₦@ViewBag.ApprovedAmount.ToString("N0")</div></div>
+    </div>
+
+    <div class="card">
+        <h2>📋 My Claims History</h2>
+        <div class="table-container">
+            <table id="claimsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Provider</th><th>Service</th><th>Amount</th><th>Status</th><th>Date</th><th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (claims.Any())
+                    {
+                        foreach (var claim in claims)
+                        {
+                            <tr>
+                                <td>@claim.Id <button class="copy-btn" onclick="copyClaimId(@claim.Id)">📋 Copy</button></td>
+                                <td>@claim.ProviderName</td>
+                                <td>@claim.ServiceDescription</td>
+                                <td>₦@claim.Amount.ToString("N0")</td>
+                                <td class="status-@claim.Status.ToLower()">@claim.Status</td>
+                                <td>@claim.SubmittedAt.ToString("yyyy-MM-dd")</td>
+                                <td>@(claim.AdminNotes ?? "-")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="empty-state">No claims found</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyClaimId(claimId) {
+        navigator.clipboard.writeText(claimId);
+        Swal.fire({ icon: 'success', title: 'Copied!', text: 'Claim ID ' + claimId + ' copied', timer: 1500, showConfirmButton: false });
+    }
+</script>
+</body>
+</html>

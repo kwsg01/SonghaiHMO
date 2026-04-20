@@ -1,0 +1,181 @@
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+    var claims = ViewBag.FilteredClaims as IEnumerable<SonghaiHMO.Models.Claim> ?? new List<SonghaiHMO.Models.Claim>();
+    var providers = ViewBag.Providers as IEnumerable<SonghaiHMO.Models.Provider> ?? new List<SonghaiHMO.Models.Provider>();
+    var startDate = ViewBag.StartDate as string;
+    var endDate = ViewBag.EndDate as string;
+    var statusFilter = ViewBag.StatusFilter as string;
+    var selectedProvider = ViewBag.SelectedProvider as int?;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reports - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .filter-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .filter-field { display: flex; flex-direction: column; }
+        .filter-field label { font-weight: bold; margin-bottom: 5px; color: #666; }
+        .generate-btn { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; padding: 12px 25px; margin-top: 10px; border-radius: 8px; }
+        .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .print-btn { background: #6c757d; }
+        .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .summary-card { background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid #1a73e8; }
+        .copy-btn { background: #6c757d; color: white; border: none; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        @@media print { .no-print { display: none; } body { background: white; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 Custom Report Builder</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Home/Logout" class="btn-danger no-print" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links no-print">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="card filter-card no-print">
+        <h2>🔍 Report Filters</h2>
+        <form method="get" action="/Admin/Reports">
+            <div class="filter-group">
+                <div class="filter-field"><label>Start Date</label><input type="date" name="startDate" value="@startDate" id="startDate"></div>
+                <div class="filter-field"><label>End Date</label><input type="date" name="endDate" value="@endDate" id="endDate"></div>
+                <div class="filter-field">
+                    <label>Claim Status</label>
+                    <select name="status" id="status">
+                        <option value="All">All Claims</option>
+                        <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                        <option value="Approved" selected="@(statusFilter == "Approved")">Approved</option>
+                        <option value="Rejected" selected="@(statusFilter == "Rejected")">Rejected</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Provider</label>
+                    <select name="providerId" id="providerId">
+                        <option value="">All Providers</option>
+                        @foreach (var p in providers)
+                        {
+                            <option value="@p.Id" selected="@(selectedProvider == p.Id)">@p.ProviderName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="generate-btn">🔍 Generate Report</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="export-buttons no-print">
+            <button class="generate-btn" onclick="window.location.href='/api/export/excel'" style="background:#28a745;">📊 Export to Excel</button>
+            <button class="generate-btn print-btn" onclick="window.print()" style="background:#6c757d;">🖨️ Print / Save as PDF</button>
+        </div>
+
+        <div class="summary-stats">
+            @{
+                var totalClaims = claims.Count();
+                var totalAmount = claims.Sum(c => c.Amount);
+                var approvedCount = claims.Count(c => c.Status == "Approved");
+                var approvedAmount = claims.Where(c => c.Status == "Approved").Sum(c => c.Amount);
+                var rejectedCount = claims.Count(c => c.Status == "Rejected");
+                var pendingCount = claims.Count(c => c.Status == "Pending");
+            }
+            <div class="summary-card"><h4>Total Claims</h4><div class="summary-number">@totalClaims</div></div>
+            <div class="summary-card"><h4>Total Amount</h4><div class="summary-currency">₦@totalAmount.ToString("N0")</div></div>
+            <div class="summary-card"><h4>Approved</h4><div class="summary-number" style="color:#28a745">@approvedCount</div><div style="font-size:12px">₦@approvedAmount.ToString("N0")</div></div>
+            <div class="summary-card"><h4>Rejected</h4><div class="summary-number" style="color:#dc3545">@rejectedCount</div></div>
+            <div class="summary-card"><h4>Pending</h4><div class="summary-number" style="color:#ff9800">@pendingCount</div></div>
+        </div>
+
+        <h2>📋 Report Results</h2>
+        <div class="table-container">
+            <table id="reportTable">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Enrollee</th><th>Provider</th><th>Service</th><th>Amount</th><th>Status</th><th>Date</th><th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (claims.Any())
+                    {
+                        foreach (var c in claims)
+                        {
+                            <tr>
+                                <td>@c.Id <button class="copy-btn" onclick="copyClaimId(@c.Id)">📋 Copy</button></td>
+                                <td>@c.Enrollee?.FullName</td>
+                                <td>@c.ProviderName</td>
+                                <td>@(c.ServiceDescription?.Length > 50 ? c.ServiceDescription.Substring(0,50)+"..." : c.ServiceDescription)</td>
+                                <td>₦@c.Amount.ToString("N0")</td>
+                                <td class="status-@c.Status.ToLower()">@c.Status</td>
+                                <td>@c.SubmittedAt.ToString("yyyy-MM-dd")</td>
+                                <td>@(c.AdminNotes ?? "-")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="8" class="empty-state">No claims found matching the filters</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+
+<script>
+    function copyClaimId(claimId) {
+        navigator.clipboard.writeText(claimId);
+        Swal.fire({ icon: 'success', title: 'Copied!', text: 'Claim ID ' + claimId + ' copied', timer: 1500, showConfirmButton: false });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = '🔍 Search in results...';
+        searchInput.style.width = '250px';
+        searchInput.style.padding = '8px';
+        searchInput.style.marginBottom = '15px';
+        searchInput.style.borderRadius = '8px';
+        searchInput.style.border = '1px solid #ddd';
+        var tableContainer = document.querySelector('.table-container');
+        if (tableContainer) {
+            tableContainer.insertBefore(searchInput, tableContainer.firstChild);
+            searchInput.addEventListener('keyup', function() {
+                var searchTerm = this.value.toLowerCase();
+                var table = document.getElementById('reportTable');
+                var rows = table.getElementsByTagName('tr');
+                for (var i = 1; i < rows.length; i++) {
+                    var row = rows[i];
+                    var found = false;
+                    var cells = row.getElementsByTagName('td');
+                    for (var j = 0; j < cells.length; j++) {
+                        if (cells[j] && cells[j].innerText.toLowerCase().includes(searchTerm)) { found = true; break; }
+                    }
+                    row.style.display = found ? '' : 'none';
+                }
+            });
+        }
+    });
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+</script>
+</body>
+</html>

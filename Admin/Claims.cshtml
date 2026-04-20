@@ -1,0 +1,249 @@
+@model IEnumerable<SonghaiHMO.Models.Claim>
+@{
+    Layout = null;
+    var adminName = ViewBag.AdminName ?? "Admin";
+    var providers = ViewBag.Providers as IEnumerable<SonghaiHMO.Models.Provider> ?? new List<SonghaiHMO.Models.Provider>();
+    var enrollees = ViewBag.Enrollees as IEnumerable<SonghaiHMO.Models.Enrollee> ?? new List<SonghaiHMO.Models.Enrollee>();
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Claims - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-bar input { width: 250px; margin: 0; }
+        .bulk-bar { background: #e8f5e9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .claim-checkbox { width: 20px; height: 20px; margin: 0; cursor: pointer; }
+        .copy-btn { background: #6c757d; color: white; border: none; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .status-pending { color: #ff9800; font-weight: bold; }
+        .status-approved { color: #28a745; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+        @@media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .search-bar { flex-direction: column; align-items: stretch; } .search-bar input { width: 100%; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>💰 Manage Claims</h1>
+        <div class="user-info">
+            <span>👤 @adminName</span>
+            <a href="/Admin/Logout" class="btn-danger" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/Admin/Dashboard">📊 Dashboard</a>
+        <a href="/Admin/Enrollees">📝 Enrollees</a>
+        <a href="/Admin/Providers">🏥 Providers</a>
+        <a href="/Admin/Claims">💰 Claims</a>
+        <a href="/Admin/Reports">📋 Reports</a>
+        <a href="/Audit/Index">📜 Audit Logs</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="card">
+        <h2>📤 Submit New Claim</h2>
+        <form id="claimForm">
+            <div class="form-row">
+                <select id="enrollee_id" required>
+                    <option value="">Select Enrollee</option>
+                    @foreach (var e in enrollees)
+                    {
+                        <option value="@e.Id">@e.FullName (@e.PlanType)</option>
+                    }
+                </select>
+                <select id="provider_id" required>
+                    <option value="">Select Provider</option>
+                    @foreach (var p in providers)
+                    {
+                        <option value="@p.Id">@p.ProviderName</option>
+                    }
+                </select>
+            </div>
+            <input type="text" id="provider_name" placeholder="Provider/Hospital Name" required>
+            <textarea id="service_description" placeholder="Service Description" rows="3" required></textarea>
+            <input type="number" id="amount" placeholder="Claim Amount (₦)" required>
+            <button type="submit" class="btn-success">📤 Submit Claim</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="bulk-bar">
+            <span>⚡ <strong>Bulk Actions</strong></span>
+            <button id="selectAllBtn" class="btn-warning" style="width: auto; padding: 8px 15px;">📌 Select All Pending</button>
+            <button id="bulkApproveBtn" class="btn-success" style="width: auto; padding: 8px 15px;">✅ Bulk Approve Selected</button>
+            <span id="selectedCount" style="color: #1a73e8; font-weight: bold;">0 selected</span>
+        </div>
+
+        <div class="search-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2>📋 All Claims</h2>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="searchInput" placeholder="🔍 Search claims...">
+                <button onclick="location.reload()" style="width: auto; padding: 8px 15px;">🔄 Refresh</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 30px;"><input type="checkbox" id="selectAllCheckbox" style="width: 20px;"></th>
+                        <th>ID</th><th>Enrollee</th><th>Provider</th><th>Service</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var claim in Model)
+                        {
+                            <tr>
+                                <td style="text-align: center;">
+                                    @if (claim.Status == "Pending")
+                                    {
+                                        <input type="checkbox" class="claim-checkbox" value="@claim.Id" style="width: 20px;">
+                                    }
+                                </td>
+                                <td>@claim.Id <button class="copy-btn" onclick="copyClaimId(@claim.Id)">📋 Copy</button></td>
+                                <td>@claim.Enrollee?.FullName</td>
+                                <td>@claim.ProviderName</td>
+                                <td>@(claim.ServiceDescription?.Length > 40 ? claim.ServiceDescription.Substring(0,40)+"..." : claim.ServiceDescription)</td>
+                                <td>₦@claim.Amount.ToString("N0")</td>
+                                <td class="status-@claim.Status.ToLower()">@claim.Status</td>
+                                <td>@claim.SubmittedAt.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    @if (claim.Status == "Pending")
+                                    {
+                                        <button class="btn-success" onclick="updateClaim(@claim.Id, 'Approved')" style="padding:5px 10px;margin-right:5px;">Approve</button>
+                                        <button class="btn-danger" onclick="updateClaim(@claim.Id, 'Rejected')" style="padding:5px 10px;">Reject</button>
+                                    }
+                                    else
+                                    {
+                                        <span>✓ Processed</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="9" class="empty-state">No claims yet</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+<div id="notification" class="notification"></div>
+
+<script>
+    var selectedClaims = [];
+
+    function copyClaimId(claimId) {
+        navigator.clipboard.writeText(claimId);
+        Swal.fire({ icon: 'success', title: 'Copied!', text: 'Claim ID ' + claimId + ' copied', timer: 1500, showConfirmButton: false });
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        var searchTerm = this.value.toLowerCase();
+        var table = document.querySelector('.table');
+        var rows = table.getElementsByTagName('tr');
+        for (var i = 1; i < rows.length; i++) {
+            var row = rows[i];
+            var found = false;
+            var cells = row.getElementsByTagName('td');
+            for (var j = 1; j < cells.length - 1; j++) {
+                if (cells[j] && cells[j].innerText.toLowerCase().includes(searchTerm)) { found = true; break; }
+            }
+            row.style.display = found ? '' : 'none';
+        }
+    });
+
+    document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+        var checkboxes = document.querySelectorAll('.claim-checkbox');
+        checkboxes.forEach(function(cb) {
+            cb.checked = this.checked;
+            var claimId = parseInt(cb.value);
+            if (this.checked) { if (!selectedClaims.includes(claimId)) selectedClaims.push(claimId); }
+            else { var idx = selectedClaims.indexOf(claimId); if (idx > -1) selectedClaims.splice(idx, 1); }
+        }.bind(this));
+        document.getElementById('selectedCount').innerText = selectedClaims.length + ' selected';
+    });
+
+    document.getElementById('selectAllBtn').addEventListener('click', function() {
+        var checkboxes = document.querySelectorAll('.claim-checkbox');
+        checkboxes.forEach(function(cb) {
+            cb.checked = true;
+            var claimId = parseInt(cb.value);
+            if (!selectedClaims.includes(claimId)) selectedClaims.push(claimId);
+        });
+        document.getElementById('selectAllCheckbox').checked = true;
+        document.getElementById('selectedCount').innerText = selectedClaims.length + ' selected';
+    });
+
+    document.getElementById('bulkApproveBtn').addEventListener('click', async function() {
+        if (selectedClaims.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No selection', text: 'Please select claims to approve', timer: 2000, showConfirmButton: false });
+            return;
+        }
+        var result = await Swal.fire({
+            title: 'Confirm Bulk Approval', text: 'Approve ' + selectedClaims.length + ' claims?', icon: 'question',
+            showCancelButton: true, confirmButtonColor: '#28a745', confirmButtonText: 'Yes, approve'
+        });
+        if (result.isConfirmed) {
+            var response = await fetch('/Admin/BulkApproveClaims', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selectedClaims)
+            });
+            var data = await response.json();
+            Swal.fire({ icon: 'success', title: 'Approved!', text: data.count + ' claims approved', timer: 2000, showConfirmButton: false });
+            setTimeout(() => location.reload(), 2000);
+        }
+    });
+
+    document.getElementById('claimForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var data = {
+            enrolleeId: parseInt(document.getElementById('enrollee_id').value),
+            providerId: parseInt(document.getElementById('provider_id').value),
+            providerName: document.getElementById('provider_name').value,
+            serviceDescription: document.getElementById('service_description').value,
+            amount: parseFloat(document.getElementById('amount').value)
+        };
+        var response = await fetch('/Admin/AddClaim', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+        });
+        var result = await response.json();
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: 'Submitted!', text: 'Claim submitted', timer: 1500, showConfirmButton: false });
+            setTimeout(() => location.reload(), 1500);
+        }
+    });
+
+    async function updateClaim(id, status) {
+        var result = await Swal.fire({
+            title: 'Confirm ' + status, text: 'Enter notes (optional):', icon: 'question', input: 'textarea',
+            showCancelButton: true, confirmButtonColor: status === 'Approved' ? '#28a745' : '#dc3545', confirmButtonText: 'Yes, ' + status.toLowerCase()
+        });
+        if (result.isConfirmed) {
+            var notes = result.value || '';
+            var response = await fetch('/Admin/UpdateClaimStatus?id=' + id + '&status=' + status + '&notes=' + notes, { method: 'POST' });
+            var data = await response.json();
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: status + '!', text: 'Claim ' + status.toLowerCase(), timer: 1500, showConfirmButton: false });
+                setTimeout(() => location.reload(), 1500);
+            }
+        }
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+</script>
+</body>
+</html>

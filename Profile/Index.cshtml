@@ -1,0 +1,229 @@
+@model SonghaiHMO.Models.UserProfile
+@{
+    Layout = null;
+    var userName = ViewBag.UserName ?? "User";
+    var userType = ViewBag.UserType ?? "User";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Profile - Songhai HMO</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .profile-section { margin-bottom: 30px; }
+        .profile-section h3 { border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 20px; }
+        .two-factor-status { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .badge-enabled { background: #28a745; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; }
+        .badge-disabled { background: #dc3545; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>👤 My Profile</h1>
+        <div class="user-info">
+            <span>👤 @userName</span>
+            <a href="/@(userType)/Logout" class="btn-danger" style="padding: 8px 15px; text-decoration: none; border-radius: 8px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/">🏠 Home</a>
+        <a href="/@(userType)/Dashboard">📊 Dashboard</a>
+        <a href="/Profile/Index" style="background:#28a745;">👤 My Profile</a>
+        <a href="/Home/Portal">🔄 Switch Portal</a>
+    </div>
+
+    <div class="profile-section">
+        <h3>Personal Information</h3>
+        <div class="card">
+            <form id="profileForm">
+                <input type="text" id="fullName" value="@Model?.FullName" placeholder="Full Name" required>
+                <input type="email" id="email" value="@Model?.Email" placeholder="Email" readonly disabled style="background:#f0f0f0;">
+                <input type="tel" id="phone" value="@Model?.Phone" placeholder="Phone Number">
+                <textarea id="address" rows="2" placeholder="Address">@Model?.Address</textarea>
+                <button type="submit" class="btn-success">💾 Update Profile</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="profile-section">
+        <h3>Security Settings</h3>
+        <div class="card">
+            <h4>Change Password</h4>
+            <form id="passwordForm">
+                <input type="password" id="currentPassword" placeholder="Current Password" required>
+                <input type="password" id="newPassword" placeholder="New Password" required>
+                <input type="password" id="confirmPassword" placeholder="Confirm New Password" required>
+                <button type="submit" class="btn-primary">🔒 Change Password</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h4>Two-Factor Authentication (2FA)</h4>
+            <div class="two-factor-status">
+                <span>Status: <span id="twoFactorStatus" class="badge-disabled">Disabled</span></span>
+                <button id="twoFactorBtn" class="btn-primary" style="width: auto; padding: 8px 20px;">Enable 2FA</button>
+            </div>
+            <p class="text-muted" style="margin-top: 10px; font-size: 12px; color: #666;">
+                2FA adds an extra layer of security. When enabled, you'll receive a verification code via email each time you log in.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div id="twoFactorModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:12px; width:90%; max-width:400px; padding:20px;">
+        <h3 style="margin-bottom:15px;">🔐 Enable Two-Factor Authentication</h3>
+        <p>A verification code will be sent to your email. Enter it below to enable 2FA.</p>
+        <input type="text" id="verificationCode" placeholder="Enter 6-digit code" style="text-align:center; font-size:20px; letter-spacing:5px;">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="sendVerificationCode()" class="btn-primary" style="flex:1;">Send Code</button>
+            <button onclick="verifyAndEnable()" class="btn-success" style="flex:1;">Verify & Enable</button>
+            <button onclick="closeTwoFactorModal()" class="btn-danger" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+<div id="notification" class="notification"></div>
+
+<script>
+    // Check 2FA status on load
+    async function loadTwoFactorStatus() {
+        var response = await fetch('/Profile/TwoFactorStatus');
+        var data = await response.json();
+        var statusSpan = document.getElementById('twoFactorStatus');
+        var btn = document.getElementById('twoFactorBtn');
+        
+        if (data.enabled) {
+            statusSpan.innerText = 'Enabled';
+            statusSpan.className = 'badge-enabled';
+            btn.innerText = 'Disable 2FA';
+            btn.onclick = disableTwoFactor;
+        } else {
+            statusSpan.innerText = 'Disabled';
+            statusSpan.className = 'badge-disabled';
+            btn.innerText = 'Enable 2FA';
+            btn.onclick = showTwoFactorModal;
+        }
+    }
+
+    function showTwoFactorModal() {
+        document.getElementById('twoFactorModal').style.display = 'flex';
+    }
+
+    function closeTwoFactorModal() {
+        document.getElementById('twoFactorModal').style.display = 'none';
+        document.getElementById('verificationCode').value = '';
+    }
+
+    async function sendVerificationCode() {
+        var response = await fetch('/Profile/SendVerificationCode', { method: 'POST' });
+        var result = await response.json();
+        Swal.fire({ icon: 'success', title: 'Code Sent!', text: 'Verification code sent to your email', timer: 2000, showConfirmButton: false });
+    }
+
+    async function verifyAndEnable() {
+        var code = document.getElementById('verificationCode').value;
+        if (!code || code.length !== 6) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Code', text: 'Please enter the 6-digit verification code' });
+            return;
+        }
+        
+        var response = await fetch('/Profile/VerifyAndEnable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        });
+        var result = await response.json();
+        
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: '2FA Enabled!', text: 'Two-factor authentication has been enabled', timer: 2000, showConfirmButton: false });
+            closeTwoFactorModal();
+            loadTwoFactorStatus();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Invalid Code', text: result.message });
+        }
+    }
+
+    async function disableTwoFactor() {
+        var result = await Swal.fire({
+            title: 'Disable 2FA?',
+            text: 'Are you sure you want to disable two-factor authentication?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Yes, disable'
+        });
+        
+        if (result.isConfirmed) {
+            var response = await fetch('/Profile/DisableTwoFactor', { method: 'POST' });
+            var data = await response.json();
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: '2FA Disabled!', timer: 1500, showConfirmButton: false });
+                loadTwoFactorStatus();
+            }
+        }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var data = {
+            fullName: document.getElementById('fullName').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value
+        };
+        
+        var response = await fetch('/Profile/UpdateProfile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        var result = await response.json();
+        Swal.fire({ icon: result.success ? 'success' : 'error', title: result.success ? 'Updated!' : 'Error', text: result.message, timer: 1500, showConfirmButton: false });
+        if (result.success) setTimeout(() => location.reload(), 1500);
+    });
+
+    document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var newPassword = document.getElementById('newPassword').value;
+        var confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (newPassword !== confirmPassword) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'New passwords do not match' });
+            return;
+        }
+        
+        var data = {
+            currentPassword: document.getElementById('currentPassword').value,
+            newPassword: newPassword,
+            confirmPassword: confirmPassword
+        };
+        
+        var response = await fetch('/Profile/ChangePassword', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        var result = await response.json();
+        
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: 'Password Changed!', text: result.message, timer: 1500, showConfirmButton: false });
+            document.getElementById('passwordForm').reset();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: result.message });
+        }
+    });
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+    
+    loadTwoFactorStatus();
+</script>
+</body>
+</html>
